@@ -12,6 +12,34 @@ import GroupSettings from "@/components/group/GroupSettings";
 import GroupMembersPanel from "@/components/group/GroupMembersPanel";
 import { motion, AnimatePresence } from "framer-motion";
 
+// Define interfaces for type safety
+interface MemberType {
+  _id: string;
+  _creationTime?: number;
+  clerkId: string;
+  name: string;
+  email: string;
+  imageUrl: string;
+  username?: string;
+  bio?: string;
+  lastSeen?: number;
+  themePreference?: string;
+}
+
+interface GroupType {
+  _id: string;
+  name: string;
+  description?: string;
+  imageUrl?: string;
+  createdBy: string;
+  createdAt: number;
+  memberIds: string[];
+  adminIds: string[];
+  lastMessageAt?: number;
+  lastMessagePreview?: string;
+  members?: (MemberType | null)[];
+}
+
 export default function GroupChatPage() {
   const params = useParams();
   const router = useRouter();
@@ -24,7 +52,7 @@ export default function GroupChatPage() {
   const groupId = typeof params.id === "string" ? params.id : "";
 
   // Get group data
-  const group = useQuery(api.groups.getGroupById, { groupId });
+  const group = useQuery(api.groups.getGroupById, { groupId }) as GroupType | null | undefined;
 
   // Check if current user is a member
   const isMember = group ? group.memberIds.includes(user?.id || "") : false;
@@ -81,6 +109,14 @@ export default function GroupChatPage() {
     );
   }
 
+  // Find creator's name safely
+  const getCreatorName = (): string => {
+    if (!group.members) return "";
+    
+    const creator = group.members.find(m => m && m.clerkId === group.createdBy);
+    return creator ? creator.name : "";
+  };
+
   // Toggle panels
   const toggleMembers = () => {
     setShowMembers(!showMembers);
@@ -130,7 +166,7 @@ export default function GroupChatPage() {
               {group.name}
             </h2>
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              {group.members?.length || group.memberIds.length} members
+              {group.members?.filter(m => m !== null).length || group.memberIds.length} members
             </p>
           </div>
         </div>
@@ -211,10 +247,11 @@ export default function GroupChatPage() {
               transition={{ type: "spring", damping: 30, stiffness: 300 }}
               className="fixed inset-0 md:relative md:w-80 md:inset-auto z-30 bg-white dark:bg-gray-900 shadow-xl md:shadow-none md:border-l md:border-gray-200 md:dark:border-gray-800"
             >
-              <GroupMembersPanel
-                group={group}
-                onClose={() => setShowMembers(false)}
-              />
+             <GroupMembersPanel 
+  group={{ ...group, members: group.members?.filter((m): m is MemberType => m !== null) }} 
+  onClose={() => setShowMembers(false)} 
+/>
+
             </motion.div>
           )}
 
@@ -279,7 +316,7 @@ export default function GroupChatPage() {
                       {group.name}
                     </h3>
                     <p className="text-gray-500 dark:text-gray-400 mt-1">
-                      Group · {group.members?.length || group.memberIds.length}{" "}
+                      Group · {group.members?.filter(m => m !== null).length || group.memberIds.length}{" "}
                       members
                     </p>
                   </div>
@@ -303,18 +340,12 @@ export default function GroupChatPage() {
                       {new Date(group.createdAt).toLocaleDateString()} at{" "}
                       {new Date(group.createdAt).toLocaleTimeString()}
                     </p>
-                    {group.members &&
-                      group.members.find((m) => m?.clerkId === group.createdBy)
-                        ?.name && (
-                        <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">
-                          Created by{" "}
-                          {
-                            group.members.find(
-                              (m) => m?.clerkId === group.createdBy
-                            )?.name
-                          }
-                        </p>
-                      )}
+                    
+                    {getCreatorName() && (
+                      <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">
+                        Created by {getCreatorName()}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -330,10 +361,11 @@ export default function GroupChatPage() {
               transition={{ type: "spring", damping: 30, stiffness: 300 }}
               className="fixed inset-0 md:relative md:w-80 md:inset-auto z-30 bg-white dark:bg-gray-900 shadow-xl md:shadow-none md:border-l md:border-gray-200 md:dark:border-gray-800"
             >
-              <GroupSettings
-                group={group}
-                onClose={() => setShowSettings(false)}
-              />
+             <GroupSettings 
+  group={{ ...group, members: group.members?.filter((m): m is MemberType => m !== null) }} 
+  onClose={() => setShowSettings(false)} 
+/>
+
             </motion.div>
           )}
         </AnimatePresence>
