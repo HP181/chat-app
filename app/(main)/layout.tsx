@@ -126,8 +126,8 @@ export default function MainLayout({
                   src={imageUrl}
                   alt={fullName}
                   width={48}
-                  height={48}
-                  className="rounded-full object-cover"
+                  height={68}
+                  className="object-contain !rounded-full"
                 />
                 <div className="absolute bottom-0 right-0 h-3 w-3 bg-green-500 rounded-full border-2 border-gray-900"></div>
               </div>

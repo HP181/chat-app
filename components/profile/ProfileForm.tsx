@@ -18,16 +18,13 @@ const ProfileForm = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
 
-  // Get user data from Convex
   const userData = useQuery(
     api.users.getUserByClerkId,
     user?.id ? { clerkId: user.id } : "skip"
   );
 
-  // Update profile mutation
   const updateProfile = useMutation(api.users.updateProfile);
 
-  // Initialize form with user data
   useEffect(() => {
     if (userData) {
       setName(userData.name || "");
@@ -37,16 +34,32 @@ const ProfileForm = () => {
     }
   }, [userData]);
 
-  // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!user) return;
-    
+
     setIsLoading(true);
     setMessage({ type: "", text: "" });
-    
+
     try {
+      // Upload the image file to Clerk
+      if (imageUrl && imageUrl !== user.imageUrl) {
+        const response = await fetch(imageUrl);
+        const blob = await response.blob();
+        const file = new File([blob], "profile.jpg", { type: blob.type });
+
+        await user.setProfileImage({ file });
+      }
+
+      // Update Clerk name if changed
+      if (name !== user.fullName) {
+        const [firstName, ...rest] = name.split(" ");
+        await user.update({
+          firstName,
+          lastName: rest.join(" "),
+        });
+      }
+
       // Update Convex profile
       await updateProfile({
         clerkId: user.id,
@@ -55,55 +68,19 @@ const ProfileForm = () => {
         bio,
         imageUrl,
       });
-      
-      // Update Clerk profile if name changed (imageUrl is handled separately)
-      if (name !== user.fullName) {
-        const nameParts = name.split(" ");
-        const firstName = nameParts[0];
-        const lastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : "";
-        
-        await user.update({
-          firstName,
-          lastName,
-        });
-      }
-      
-      // Update profile image in Clerk if it changed
-      if (imageUrl !== user.imageUrl) {
-        try {
-          // Check if Clerk has a setProfileImage method
-          if (user.setProfileImage) {
-            await user.setProfileImage({ file: imageUrl });
-          }
-          // If no specific method is available, we keep the profile image
-          // only in Convex. The Clerk UI will use our Convex data.
-        } catch (imageError) {
-          console.error("Error updating profile image:", imageError);
-          // Continue, since the image is still updated in Convex
-        }
-      }
-      
-      setMessage({
-        type: "success",
-        text: "Profile updated successfully!",
-      });
-    } catch (error) {
-      console.error("Error updating profile:", error);
-      setMessage({
-        type: "error",
-        text: "Failed to update profile. Please try again.",
-      });
+
+      setMessage({ type: "success", text: "Profile updated successfully!" });
+    } catch (err) {
+      console.error("Update error:", err);
+      setMessage({ type: "error", text: "Failed to update profile. Try again." });
     } finally {
       setIsLoading(false);
-      
-      // Clear message after 3 seconds
-      setTimeout(() => {
-        setMessage({ type: "", text: "" });
-      }, 3000);
+      setTimeout(() => setMessage({ type: "", text: "" }), 3000);
     }
   };
 
   if (!user) return null;
+
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
