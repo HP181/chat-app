@@ -53,7 +53,7 @@ const GroupMembersPanel = ({ group, onClose }: GroupMembersPanelProps) => {
 
   // Determine if current user is admin
   const isAdmin = user && group.adminIds.includes(user.id);
-  const isCreator = user && group.createdBy === user.id;
+  // const isCreator = user && group.createdBy === user.id;
   
   // Search users to add to group
   const searchUsers = useQuery(

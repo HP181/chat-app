@@ -5,7 +5,7 @@ import { Search, X, ArrowDown, ArrowUp } from "lucide-react";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { format } from "date-fns";
-import { MessageType, DirectMessageType, GroupMessageType } from "./MessageBubble"; // Import the types
+import { MessageType } from "./MessageBubble"; // Import the types
 
 interface SearchMessagesProps {
   chatId: string;

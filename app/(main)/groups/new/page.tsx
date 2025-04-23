@@ -25,9 +25,9 @@ interface UserType {
 }
 
 // Define the error type
-interface CreateGroupError extends Error {
-  message: string;
-}
+// interface CreateGroupError extends Error {
+//   message: string;
+// }
 
 export default function CreateGroupPage() {
   const router = useRouter();

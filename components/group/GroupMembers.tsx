@@ -7,8 +7,35 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { X, Search, Plus, Crown, UserPlus, MoreHorizontal, Shield, UserMinus } from "lucide-react";
 
+// Define proper interfaces for type safety
+interface MemberType {
+  _id: string;
+  clerkId: string;
+  name: string;
+  email: string;
+  imageUrl: string;
+  username?: string;
+  bio?: string;
+  lastSeen?: number;
+  themePreference?: string;
+}
+
+interface GroupType {
+  _id: string;
+  name: string;
+  description?: string;
+  imageUrl?: string;
+  createdBy: string;
+  createdAt: number;
+  memberIds: string[];
+  adminIds: string[];
+  lastMessageAt?: number;
+  lastMessagePreview?: string;
+  members?: MemberType[];
+}
+
 interface GroupMembersProps {
-  group: any;
+  group: GroupType;
   isAdmin: boolean;
   onClose: () => void;
 }
@@ -25,7 +52,7 @@ const GroupMembers = ({ group, isAdmin, onClose }: GroupMembersProps) => {
     showAddMembers && searchTerm.trim().length > 0 && user?.id
       ? { searchTerm, currentUserClerkId: user.id }
       : "skip"
-  );
+  ) as MemberType[] | undefined;
   
   // Group mutations
   const addMember = useMutation(api.groups.addGroupMember);
@@ -103,9 +130,9 @@ const GroupMembers = ({ group, isAdmin, onClose }: GroupMembersProps) => {
   };
 
   // Filter members by search term
-  const filteredMembers = group.members?.filter((member: any) =>
+  const filteredMembers = (group.members || []).filter((member: MemberType) =>
     member.name.toLowerCase().includes(searchTerm.toLowerCase())
-  ) || [];
+  );
 
   return (
     <div className="h-full flex flex-col">
@@ -167,7 +194,7 @@ const GroupMembers = ({ group, isAdmin, onClose }: GroupMembersProps) => {
             <div className="space-y-1">
               {searchUsers
                 .filter(
-                  (user) => !group.memberIds.includes(user.clerkId)
+                  (searchedUser) => !group.memberIds.includes(searchedUser.clerkId)
                 )
                 .map((searchedUser) => (
                   <button
@@ -208,7 +235,7 @@ const GroupMembers = ({ group, isAdmin, onClose }: GroupMembersProps) => {
       {!showAddMembers && (
         <div className="flex-1 overflow-y-auto p-2">
           <div className="space-y-1">
-            {filteredMembers.map((member: any) => (
+            {filteredMembers.map((member: MemberType) => (
               <div
                 key={member._id}
                 className="relative p-2 flex items-center space-x-3 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md"
