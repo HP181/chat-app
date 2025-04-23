@@ -6,14 +6,14 @@ import { useUser } from "@clerk/nextjs";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { 
-  MessageSquare, 
-  Users, 
-  Settings, 
+import {
+  MessageSquare,
+  Users,
+  Settings,
   User,
-  Menu, 
+  Menu,
   X,
-  LogOut
+  LogOut,
 } from "lucide-react";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -29,7 +29,7 @@ export default function MainLayout({
   const router = useRouter();
   const pathname = usePathname();
   const { signOut } = useClerk();
-  
+
   // Get user data in Convex
   const createOrUpdateUser = useMutation(api.users.createOrUpdateUser);
   const updateLastSeen = useMutation(api.users.updateLastSeen);
@@ -38,10 +38,11 @@ export default function MainLayout({
   useEffect(() => {
     if (isUserLoaded && user) {
       // Use optional chaining and provide fallbacks for all values
-      const primaryEmail = user.emailAddresses && user.emailAddresses.length > 0 
-      ? user.emailAddresses[0].emailAddress || "" 
-      : "";
-        
+      const primaryEmail =
+        user.emailAddresses && user.emailAddresses.length > 0
+          ? user.emailAddresses[0].emailAddress || ""
+          : "";
+
       createOrUpdateUser({
         clerkId: user.id,
         email: primaryEmail,
@@ -49,15 +50,15 @@ export default function MainLayout({
         imageUrl: user.imageUrl || "/default-avatar.png",
         preserveImage: true, // Add this line to preserve existing Convex image URLs
       });
-      
+
       // Update last seen timestamp
       updateLastSeen({ clerkId: user.id });
-      
+
       // Set up interval to update last seen status
       const interval = setInterval(() => {
         updateLastSeen({ clerkId: user.id });
       }, 60000); // Every minute
-      
+
       return () => clearInterval(interval);
     }
   }, [isUserLoaded, user, createOrUpdateUser, updateLastSeen]);
@@ -80,9 +81,10 @@ export default function MainLayout({
   // Get safe values with fallbacks
   const fullName = user.fullName || "User";
   const imageUrl = user.imageUrl || "/default-avatar.png";
-  const email = user.emailAddresses && user.emailAddresses.length > 0 
-    ? user.emailAddresses[0].emailAddress || "No email"
-    : "No email";
+  const email =
+    user.emailAddresses && user.emailAddresses.length > 0
+      ? user.emailAddresses[0].emailAddress || "No email"
+      : "No email";
 
   // Function to check if a link is active
   const isActive = (path: string) => {
@@ -106,7 +108,7 @@ export default function MainLayout({
       {/* Sidebar - always visible on desktop, conditionally visible on mobile */}
       <aside
         className={`w-72 bg-gray-900 text-white h-full overflow-y-auto
-                   ${isSidebarOpen ? 'fixed inset-0 z-40' : 'hidden'} 
+                   ${isSidebarOpen ? "fixed inset-0 z-40" : "hidden"} 
                    md:relative md:block md:z-auto`}
       >
         <div className="h-full flex flex-col">
@@ -121,21 +123,19 @@ export default function MainLayout({
           {/* User profile */}
           <div className="p-5 border-b border-gray-800">
             <div className="flex items-center space-x-3">
-            <div className="relative w-12 h-12">
-  <div className="rounded-full overflow-hidden w-full h-full">
-    <Image
-      src={imageUrl}
-      alt={fullName}
-      fill
-      className="object-cover rounded-full"
-    />
-  </div>
+              <div className="relative w-12 h-12">
+                <div className="rounded-full overflow-hidden w-full h-full">
+                  <Image
+                    src={imageUrl}
+                    alt={fullName}
+                    fill
+                    className="object-cover rounded-full"
+                  />
+                </div>
 
-  {/* Green dot — positioned *outside* the image */}
-  <div className="absolute -bottom-1 -right-1 h-3.5 w-3.5 bg-green-500 rounded-full border-2 border-gray-900 z-10" />
-</div>
-
-
+                {/* Green dot — positioned *outside* the image */}
+                <div className="absolute -bottom-1 -right-1 h-3.5 w-3.5 bg-green-500 rounded-full border-2 border-gray-900 z-10" />
+              </div>
 
               <div className="flex-1 min-w-0">
                 <h2 className="font-semibold truncate">{fullName}</h2>
@@ -159,13 +159,15 @@ export default function MainLayout({
                   key={item.href}
                   href={item.href}
                   className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                    active 
-                    ? "bg-blue-600 text-white" 
-                    : "text-gray-400 hover:bg-gray-800 hover:text-white"
+                    active
+                      ? "bg-blue-600 text-white"
+                      : "text-gray-400 hover:bg-gray-800 hover:text-white"
                   }`}
                   onClick={() => setIsSidebarOpen(false)}
                 >
-                  <Icon className={`h-5 w-5 ${active ? "text-white" : "text-gray-400"}`} />
+                  <Icon
+                    className={`h-5 w-5 ${active ? "text-white" : "text-gray-400"}`}
+                  />
                   <span>{item.label}</span>
                   {active && (
                     <div className="ml-auto h-2 w-2 rounded-full bg-white" />
