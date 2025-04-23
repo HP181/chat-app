@@ -1,4 +1,3 @@
-// components/ui/FileUpload.tsx
 "use client";
 
 import { useState, useCallback } from "react";
@@ -13,6 +12,9 @@ type FileUploadProps = {
   disabled?: boolean;
   endpoint: "messageImage" | "messageVideo" | "profile" | "group";
 };
+
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_VIDEO_SIZE = 100 * 1024 * 1024; // 100MB
 
 const FileUpload = ({ value, onChange, disabled, endpoint }: FileUploadProps) => {
   const [isUploading, setIsUploading] = useState(false);
@@ -38,18 +40,23 @@ const FileUpload = ({ value, onChange, disabled, endpoint }: FileUploadProps) =>
       const file = acceptedFiles[0];
       if (!file) return;
 
-      // Check file type
       const isImage = file.type.includes("image");
       const isVideo = file.type.includes("video");
-      
+
       if (!isImage && !isVideo) {
         alert("Please upload an image or video file");
         return;
       }
 
+      const maxAllowedSize = isImage ? MAX_IMAGE_SIZE : MAX_VIDEO_SIZE;
+
+      if (file.size > maxAllowedSize) {
+        alert(`File too large. Max allowed: ${isImage ? "10MB for images" : "100MB for videos"}`);
+        return;
+      }
+
       setFileType(isImage ? "image" : "video");
 
-      // Create a preview URL
       const reader = new FileReader();
       reader.onload = (e) => {
         if (e.target?.result) {
@@ -61,10 +68,8 @@ const FileUpload = ({ value, onChange, disabled, endpoint }: FileUploadProps) =>
       try {
         setIsUploading(true);
 
-        // Get signature for upload
         const { timestamp, signature, folder, apiKey, cloudName } = await getSignature();
 
-        // Create form data for upload
         const formData = new FormData();
         formData.append("file", file);
         formData.append("api_key", apiKey);
@@ -72,13 +77,11 @@ const FileUpload = ({ value, onChange, disabled, endpoint }: FileUploadProps) =>
         formData.append("signature", signature);
         formData.append("folder", folder);
 
-        // Upload to Cloudinary
         const response = await axios.post(
           `https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`,
           formData
         );
 
-        // Call onChange with the secure URL
         onChange(response.data.secure_url);
       } catch (error) {
         console.error("Error uploading file:", error);
@@ -98,10 +101,8 @@ const FileUpload = ({ value, onChange, disabled, endpoint }: FileUploadProps) =>
       'video/*': []
     },
     maxFiles: 1,
-    maxSize: 10 * 1024 * 1024, // 10MB max
   });
 
-  // Function to clear the selected file
   const onClear = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     onChange("");
@@ -167,7 +168,7 @@ const FileUpload = ({ value, onChange, disabled, endpoint }: FileUploadProps) =>
                   Drag & drop or click to upload
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Images or videos up to 10MB
+                  Max 10MB for images, 100MB for videos
                 </p>
               </>
             )}
