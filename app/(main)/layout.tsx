@@ -121,16 +121,22 @@ export default function MainLayout({
           {/* User profile */}
           <div className="p-5 border-b border-gray-800">
             <div className="flex items-center space-x-3">
-              <div className="relative w-12 h-12">
-                <Image
-                  src={imageUrl}
-                  alt={fullName}
-                  width={48}
-                  height={68}
-                  className="object-contain !rounded-full"
-                />
-                <div className="absolute bottom-0 right-0 h-3 w-3 bg-green-500 rounded-full border-2 border-gray-900"></div>
-              </div>
+            <div className="relative w-12 h-12">
+  <div className="rounded-full overflow-hidden w-full h-full">
+    <Image
+      src={imageUrl}
+      alt={fullName}
+      fill
+      className="object-cover rounded-full"
+    />
+  </div>
+
+  {/* Green dot — positioned *outside* the image */}
+  <div className="absolute -bottom-1 -right-1 h-3.5 w-3.5 bg-green-500 rounded-full border-2 border-gray-900 z-10" />
+</div>
+
+
+
               <div className="flex-1 min-w-0">
                 <h2 className="font-semibold truncate">{fullName}</h2>
                 <p className="text-sm text-gray-400 truncate">{email}</p>
