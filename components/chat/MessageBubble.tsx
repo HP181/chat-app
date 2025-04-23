@@ -1,12 +1,14 @@
+// components/chat/MessageBubble.tsx
 "use client";
 
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import { format } from "date-fns";
-import { CheckCheck, Trash2, Smile } from "lucide-react";
+import { Check, CheckCheck, Trash2, Smile } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface MessageBubbleProps {
   message: any;
@@ -32,6 +34,14 @@ const MessageBubble = ({ message, isOwnMessage, isGroup }: MessageBubbleProps) =
 
   const deleteMessage = useMutation(deleteMessageFn);
   const addReaction = useMutation(addReactionFn);
+
+  // Get recipient online status (for delivery receipts)
+  const recipientStatus = useQuery(
+    api.messages.getMessageRecipientStatus,
+    isOwnMessage && !isGroup ? 
+      { messageId: message._id } : 
+      "skip"
+  );
 
   // Close reaction menu when clicking outside
   useEffect(() => {
@@ -87,19 +97,41 @@ const MessageBubble = ({ message, isOwnMessage, isGroup }: MessageBubbleProps) =
     return Object.entries(counts);
   };
 
+  // Determine message status (for sent messages)
+  const getMessageStatus = () => {
+    if (!isOwnMessage) return null;
+    
+    // Parse the readBy array to check if message is read
+    const readBy = message.readBy || [];
+    const hasBeenReadByOthers = readBy.some((id: string) => id !== user?.id);
+    
+    // Check if recipient is online based on query
+    const isRecipientOnline = recipientStatus?.isOnline || false;
+    
+    if (hasBeenReadByOthers) {
+      return "read"; // Message has been read (green double tick)
+    } else if (isRecipientOnline) {
+      return "delivered"; // Message delivered - user is online but hasn't read (gray double tick)
+    } else {
+      return "sent"; // Message sent but user is offline (gray single tick)
+    }
+  };
+
+  const messageStatus = getMessageStatus();
   const reactionCounts = getReactionCounts();
 
   return (
     <div
       id={`message-${message._id}`}
-      className={`flex flex-col ${isOwnMessage ? "items-end" : "items-start"} relative mb-10`}
+      className={`flex flex-col ${isOwnMessage ? "items-end" : "items-start"} relative mb-6`}
     >
       {/* Message bubble */}
-      <div
-        className={`max-w-[80%] rounded-lg p-3 ${
+      <motion.div
+        whileHover={{ scale: 1.01 }}
+        className={`max-w-[80%] rounded-xl p-3 ${
           isOwnMessage
-            ? "bg-blue-500 text-white rounded-br-none"
-            : "bg-gray-100 dark:bg-gray-800 rounded-bl-none"
+            ? "bg-blue-600 text-white"
+            : "bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-white"
         }`}
       >
         {/* Group message sender name */}
@@ -111,17 +143,17 @@ const MessageBubble = ({ message, isOwnMessage, isGroup }: MessageBubbleProps) =
 
         {/* Message content */}
         {message.isDeleted ? (
-          <div className="italic text-gray-500 dark:text-gray-400">
+          <div className="italic text-gray-400 dark:text-gray-400">
             This message was deleted
           </div>
         ) : (
           <>
             {/* Text content */}
-            {message.content && <p>{message.content}</p>}
+            {message.content && <p className="leading-normal">{message.content}</p>}
 
             {/* Media content */}
             {message.mediaUrl && (
-              <div className="mt-2">
+              <div className="mt-2 rounded-lg overflow-hidden">
                 {message.mediaType === "image" ? (
                   <Image
                     src={message.mediaUrl}
@@ -144,95 +176,103 @@ const MessageBubble = ({ message, isOwnMessage, isGroup }: MessageBubbleProps) =
 
         {/* Message timestamp and read receipts */}
         <div
-          className={`text-xs mt-1 flex items-center ${
+          className={`text-xs mt-1 flex items-center justify-end ${
             isOwnMessage ? "text-blue-100" : "text-gray-500 dark:text-gray-400"
           }`}
         >
           <span>{format(new Date(message.timestamp), "HH:mm")}</span>
-          {isOwnMessage && message.readBy && message.readBy.length > 1 && (
-            <span className="ml-2 inline-flex items-center">
-              <CheckCheck className="h-3 w-3" />
+          {isOwnMessage && (
+            <span className="ml-1 inline-flex items-center">
+              {messageStatus === "read" && (
+                <CheckCheck className="h-4 w-4 text-green-400 !font-extrabold" />
+              )}
+              {messageStatus === "delivered" && (
+                <CheckCheck className="h-3.5 w-3.5" />
+              )}
+              {messageStatus === "sent" && (
+                <Check className="h-3.5 w-3.5" />
+              )}
             </span>
           )}
         </div>
-      </div>
+      </motion.div>
 
       {/* Reactions displayed inline with counts */}
-      {reactionCounts && reactionCounts.length > 0 && (
-        <div className="flex space-x-2 mt-1">
-          {reactionCounts.map(([reaction, count]) => (
-            <div
-              key={reaction}
-              className="bg-gray-800 dark:bg-gray-900 text-white rounded-full px-2 py-1 flex items-center space-x-1"
-            >
-              <span>{reaction}</span>
-              <span className="text-xs">{count}</span>
-            </div>
-          ))}
-        </div>
-      )}
+      <AnimatePresence>
+        {reactionCounts && reactionCounts.length > 0 && (
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            className="flex space-x-2 mt-1"
+          >
+            {reactionCounts.map(([reaction, count]) => (
+              <motion.div
+                key={reaction}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                className="bg-gray-800 dark:bg-gray-900 text-white rounded-full px-2 py-1 flex items-center space-x-1"
+              >
+                <span>{reaction}</span>
+                <span className="text-xs">{count}</span>
+              </motion.div>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Action buttons */}
       <div className="flex space-x-2 mt-2">
         {/* Reaction button */}
-        <button
+        <motion.button
           ref={reactionButtonRef}
           onClick={() => setShowReactions(!showReactions)}
-          className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-800 hover:bg-gray-700"
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-800 hover:bg-gray-700 text-gray-300 transition-colors"
         >
-          <Smile className="h-4 w-4 text-gray-300" />
-        </button>
+          <Smile className="h-4 w-4" />
+        </motion.button>
         
         {/* Delete button (only for own messages) */}
         {isOwnMessage && (
-          <button
+          <motion.button
             onClick={handleDelete}
-            className="w-8 h-8 flex items-center justify-center rounded-full bg-red-500 hover:bg-red-600"
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            className="w-8 h-8 flex items-center justify-center rounded-full bg-red-500 hover:bg-red-600 text-white transition-colors"
           >
-            <Trash2 className="h-4 w-4 text-white" />
-          </button>
+            <Trash2 className="h-4 w-4" />
+          </motion.button>
         )}
       </div>
 
       {/* Reaction selector popup */}
-      {showReactions && (
-        <div 
-          ref={reactionMenuRef}
-          className={`absolute ${isOwnMessage ? 'right-0' : 'left-0'} -top-12 bg-gray-800/95 dark:bg-gray-900/95 rounded-full shadow-lg py-2 px-3
-                    flex space-x-3 border border-gray-700 z-50 min-w-[220px] justify-center`}
-        >
-          <button
-            onClick={() => handleReaction("❤️")}
-            className="p-1 hover:bg-gray-700/50 rounded-full text-xl"
+      <AnimatePresence>
+        {showReactions && (
+          <motion.div 
+            ref={reactionMenuRef}
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            transition={{ type: "spring", stiffness: 500, damping: 30 }}
+            className={`absolute ${isOwnMessage ? 'right-0' : 'left-0'} -top-16 bg-gray-800/95 dark:bg-gray-900/95 rounded-full shadow-lg py-2 px-3
+                      flex space-x-3 z-50 min-w-[220px] justify-center`}
           >
-            ❤️
-          </button>
-          <button
-            onClick={() => handleReaction("👍")}
-            className="p-1 hover:bg-gray-700/50 rounded-full text-xl"
-          >
-            👍
-          </button>
-          <button
-            onClick={() => handleReaction("😂")}
-            className="p-1 hover:bg-gray-700/50 rounded-full text-xl"
-          >
-            😂
-          </button>
-          <button
-            onClick={() => handleReaction("😮")}
-            className="p-1 hover:bg-gray-700/50 rounded-full text-xl"
-          >
-            😮
-          </button>
-          <button
-            onClick={() => handleReaction("😢")}
-            className="p-1 hover:bg-gray-700/50 rounded-full text-xl"
-          >
-            😢
-          </button>
-        </div>
-      )}
+            {['❤️', '👍', '😂', '😮', '😢'].map((emoji) => (
+              <motion.button
+                key={emoji}
+                onClick={() => handleReaction(emoji)}
+                whileHover={{ scale: 1.2 }}
+                whileTap={{ scale: 0.9 }}
+                className="p-1 hover:bg-gray-700/50 rounded-full text-xl"
+              >
+                {emoji}
+              </motion.button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

@@ -26,7 +26,7 @@ export const getOrCreateChat = mutation({
     }
 
     // Check if a chat already exists between these users
-    // Fetch all chats and filter in memory
+    // Get all chats and filter in memory
     const chats = await ctx.db.query("chats").collect();
     const existingChat = chats.find(chat => 
       chat.participantIds.includes(currentUser.clerkId) && 
@@ -43,11 +43,13 @@ export const getOrCreateChat = mutation({
       createdAt: Date.now(),
       lastMessageAt: Date.now(),
       lastMessagePreview: "",
+      unreadBy: [], // Initialize with empty array
     });
 
     return { chatId: newChatId.toString(), isNew: true };
   },
 });
+
 
 // Get a specific chat
 export const getChat = query({
@@ -94,10 +96,15 @@ export const sendMessage = mutation({
       readBy: [args.senderId], // Mark as read by sender
     });
 
-    // Update the chat with the last message preview
+    // Find the recipient user ID (the other participant)
+    const recipientId = chat.participantIds.find(id => id !== args.senderId);
+    
+    // Update the chat with the last message preview and mark as unread for recipient
     await ctx.db.patch(args.chatId as Id<"chats">, {
       lastMessageAt: Date.now(),
       lastMessagePreview: args.content.substring(0, 50) + (args.content.length > 50 ? "..." : ""),
+      // Mark as unread for the recipient only
+      unreadBy: recipientId ? [recipientId] : [],
     });
 
     return messageId;
@@ -270,7 +277,99 @@ export const searchMessages = query({
   },
 });
 
-// Get user chats
+export const markChatAsRead = mutation({
+  args: {
+    chatId: v.string(),
+    userId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const chat = await ctx.db.get(args.chatId as Id<"chats">);
+    if (!chat) {
+      throw new ConvexError("Chat not found");
+    }
+
+    // Check if user is a participant
+    if (!chat.participantIds.includes(args.userId)) {
+      throw new ConvexError("User is not a participant in this chat");
+    }
+
+    // Remove user from the unreadBy array
+    const unreadBy = chat.unreadBy || [];
+    if (unreadBy.includes(args.userId)) {
+      await ctx.db.patch(args.chatId as Id<"chats">, {
+        unreadBy: unreadBy.filter(id => id !== args.userId),
+      });
+    }
+
+    // Also mark all messages as read by this user
+    const messages = await ctx.db
+      .query("messages")
+      .withIndex("by_chat", (q) => q.eq("chatId", args.chatId))
+      .collect();
+
+    for (const message of messages) {
+      if (message.senderId !== args.userId) { // Only mark messages from others as read
+        const readBy = message.readBy || [];
+        if (!readBy.includes(args.userId)) {
+          await ctx.db.patch(message._id, {
+            readBy: [...readBy, args.userId],
+          });
+        }
+      }
+    }
+
+    return { success: true };
+  },
+});
+
+
+
+
+// Get message recipient status
+export const getMessageRecipientStatus = query({
+  args: {
+    messageId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const message = await ctx.db.get(args.messageId as Id<"messages">);
+    if (!message) {
+      throw new ConvexError("Message not found");
+    }
+
+    // Get chat to find recipient
+    const chat = await ctx.db.get(message.chatId as Id<"chats">);
+    if (!chat) {
+      throw new ConvexError("Chat not found");
+    }
+
+    // Find recipient (the other participant who isn't the sender)
+    const recipientId = chat.participantIds.find(id => id !== message.senderId);
+    if (!recipientId) {
+      return { isOnline: false };
+    }
+
+    // Get recipient user details
+    const recipient = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", recipientId))
+      .unique();
+
+    if (!recipient) {
+      return { isOnline: false };
+    }
+
+    // Check if recipient is online (active within last 2 minutes)
+    const isOnline = recipient.lastSeen 
+      ? (Date.now() - recipient.lastSeen) < 2 * 60 * 1000 
+      : false;
+
+    return { isOnline };
+  },
+});
+
+
+
+
 export const getUserChats = query({
   args: {
     userClerkId: v.string(),
@@ -315,6 +414,8 @@ export const getUserChats = query({
             ...otherUser,
             _id: otherUser._id.toString(),
           },
+          // Check if current user is in unreadBy array
+          isUnread: (chat.unreadBy || []).includes(args.userClerkId),
         };
       })
     );

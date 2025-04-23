@@ -1,3 +1,4 @@
+// convex/schema.ts
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
@@ -20,6 +21,7 @@ export default defineSchema({
     createdAt: v.number(),
     lastMessageAt: v.optional(v.number()),
     lastMessagePreview: v.optional(v.string()),
+    unreadBy: v.optional(v.array(v.string())), // New field to track unread status per user
   }).index("by_participants", ["participantIds"]),
 
   // Messages table
@@ -51,6 +53,7 @@ export default defineSchema({
     adminIds: v.array(v.string()),
     lastMessageAt: v.optional(v.number()),
     lastMessagePreview: v.optional(v.string()),
+    unreadBy: v.optional(v.array(v.string())), // New field for groups too
   }).index("by_member", ["memberIds"]),
 
   // Group messages table

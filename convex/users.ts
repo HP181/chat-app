@@ -12,6 +12,7 @@ export const createOrUpdateUser = mutation({
     username: v.optional(v.string()),
     bio: v.optional(v.string()),
     themePreference: v.optional(v.string()),
+    preserveImage: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const existingUser = await ctx.db
@@ -20,15 +21,22 @@ export const createOrUpdateUser = mutation({
       .unique();
 
     if (existingUser) {
-      // Update existing user
-      return await ctx.db.patch(existingUser._id, {
+      // Prepare update object
+      const updates: Record<string, any> = {
         email: args.email,
         name: args.name,
-        imageUrl: args.imageUrl,
         username: args.username,
         bio: args.bio,
         themePreference: args.themePreference,
-      });
+      };
+      
+      // Only update imageUrl if preserveImage is not true or the existing image is missing
+      if (!args.preserveImage || !existingUser.imageUrl) {
+        updates.imageUrl = args.imageUrl;
+      }
+      
+      // Update existing user
+      return await ctx.db.patch(existingUser._id, updates);
     } else {
       // Create new user
       return await ctx.db.insert("users", {
