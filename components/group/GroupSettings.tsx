@@ -1,3 +1,4 @@
+// components/group/GroupSettings.tsx
 "use client";
 
 import { useState } from "react";
@@ -8,8 +9,35 @@ import { api } from "@/convex/_generated/api";
 import { X, Save, Trash2, Loader2 } from "lucide-react";
 import FileUpload from "../ui/FileUpload";
 
+// Define interfaces for type safety
+interface MemberType {
+  _id: string;
+  clerkId: string;
+  name: string;
+  email: string;
+  imageUrl: string;
+  username?: string;
+  bio?: string;
+  lastSeen?: number;
+  themePreference?: string;
+}
+
+interface GroupType {
+  _id: string;
+  name: string;
+  description?: string;
+  imageUrl?: string;
+  createdBy: string;
+  createdAt: number;
+  memberIds: string[];
+  adminIds: string[];
+  lastMessageAt?: number;
+  lastMessagePreview?: string;
+  members?: MemberType[];
+}
+
 interface GroupSettingsProps {
-  group: any;
+  group: GroupType;
   onClose: () => void;
 }
 
@@ -56,9 +84,9 @@ const GroupSettings = ({ group, onClose }: GroupSettingsProps) => {
       setTimeout(() => {
         setMessage("");
       }, 3000);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error updating group:", error);
-      setError(error.message || "Failed to update group");
+      setError(error instanceof Error ? error.message : "Failed to update group");
     } finally {
       setIsUpdating(false);
     }
@@ -84,9 +112,9 @@ const GroupSettings = ({ group, onClose }: GroupSettingsProps) => {
       });
       
       router.push("/");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error deleting group:", error);
-      setError(error.message || "Failed to delete group");
+      setError(error instanceof Error ? error.message : "Failed to delete group");
       setIsDeleting(false);
     }
   };

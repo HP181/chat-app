@@ -1,19 +1,46 @@
 // components/group/GroupMembersPanel.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import Image from "next/image";
 import { 
   X, Search, UserPlus, UserMinus, Shield, MoreHorizontal,
-  Crown, Check, Users, Loader2
+  Crown, Users, Loader2
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
+// Define interfaces for type safety
+interface MemberType {
+  _id: string;
+  clerkId: string;
+  name: string;
+  email: string;
+  imageUrl: string;
+  username?: string;
+  bio?: string;
+  lastSeen?: number;
+  themePreference?: string;
+}
+
+interface GroupType {
+  _id: string;
+  name: string;
+  description?: string;
+  imageUrl?: string;
+  createdBy: string;
+  createdAt: number;
+  memberIds: string[];
+  adminIds: string[];
+  lastMessageAt?: number;
+  lastMessagePreview?: string;
+  members?: MemberType[];
+}
+
 interface GroupMembersPanelProps {
-  group: any;
+  group: GroupType;
   onClose: () => void;
 }
 
@@ -34,7 +61,7 @@ const GroupMembersPanel = ({ group, onClose }: GroupMembersPanelProps) => {
     addingMembers && searchTerm.trim().length > 0 && user?.id
       ? { searchTerm, currentUserClerkId: user.id }
       : "skip"
-  );
+  ) as MemberType[] | undefined;
   
   // Group mutations
   const addMember = useMutation(api.groups.addGroupMember);
@@ -130,10 +157,10 @@ const GroupMembersPanel = ({ group, onClose }: GroupMembersPanelProps) => {
   };
 
   // Filter members by search term
-  const filteredMembers = group.members?.filter((member: any) =>
+  const filteredMembers = (group.members || []).filter((member: MemberType) =>
     member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (member.username && member.username.toLowerCase().includes(searchTerm.toLowerCase()))
-  ) || [];
+  );
 
   // Filter search results to exclude existing members
   const filteredSearchResults = searchUsers?.filter(
@@ -301,7 +328,7 @@ const GroupMembersPanel = ({ group, onClose }: GroupMembersPanelProps) => {
               
               {!isProcessing && filteredMembers.length > 0 ? (
                 <div className="space-y-1">
-                  {filteredMembers.map((member: any) => (
+                  {filteredMembers.map((member: MemberType) => (
                     <motion.div
                       key={member._id}
                       initial={{ opacity: 0, x: -20 }}
@@ -389,7 +416,7 @@ const GroupMembersPanel = ({ group, onClose }: GroupMembersPanelProps) => {
                               initial={{ opacity: 0, scale: 0.9, y: 10 }}
                               animate={{ opacity: 1, scale: 1, y: 0 }}
                               exit={{ opacity: 0, scale: 0.9, y: 10 }}
-                              className="absolute right-4 z-10 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
+                              className="absolute right-4 mt-12 z-10 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
                               style={{ width: "180px" }}
                             >
                               {/* Promote to admin (if not already) */}

@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useUser } from "@clerk/nextjs";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { X, Search, Plus, Crown, UserPlus, MoreHorizontal, Shield, UserMinus, UserCheck } from "lucide-react";
+import { X, Search, Plus, Crown, UserPlus, MoreHorizontal, Shield, UserMinus } from "lucide-react";
 
 interface GroupMembersProps {
   group: any;

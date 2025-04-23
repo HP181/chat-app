@@ -12,6 +12,42 @@ import { UserPlus, Users, Plus, Search } from "lucide-react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 
+
+interface OtherUserType {
+  _id: string;
+  clerkId: string;
+  name: string;
+  email: string;
+  imageUrl: string;
+  username?: string;
+  bio?: string;
+  lastSeen?: number;
+  themePreference?: string;
+}
+
+interface ChatType {
+  _id: string;
+  participantIds: string[];
+  createdAt: number;
+  lastMessageAt?: number;
+  lastMessagePreview?: string;
+  otherUser: OtherUserType;
+  isUnread?: boolean;
+}
+
+interface GroupType {
+  _id: string;
+  name: string;
+  description?: string;
+  imageUrl?: string;
+  createdBy: string;
+  createdAt: number;
+  memberIds: string[];
+  adminIds: string[];
+  lastMessageAt?: number;
+  lastMessagePreview?: string;
+}
+
 export default function Dashboard() {
   const router = useRouter();
   const { user, isLoaded: isUserLoaded } = useUser();
@@ -27,13 +63,14 @@ export default function Dashboard() {
   const userChats = useQuery(
     api.messages.getUserChats,
     user?.id ? { userClerkId: user.id } : "skip"
-  );
+  ) as ChatType[] | undefined;
+
   
   // Get user groups
   const userGroups = useQuery(
     api.groups.getUserGroups,
     user?.id ? { userClerkId: user.id } : "skip"
-  );
+  ) as GroupType[] | undefined;
   
   // Search users
   const searchUsers = useQuery(
@@ -117,20 +154,21 @@ export default function Dashboard() {
   }
 
   // Filter chats based on active tab
-  let displayChats: any[] = [];
-  let displayGroups: any[] = [];
+  let displayChats: ChatType[] = [];
+  let displayGroups: GroupType[] = [];
 
-  if (activeTab === "all") {
-    displayChats = (userChats || []).filter(chat => chat !== null);
-    displayGroups = [];
-  } else if (activeTab === "unread") {
-    displayChats = (userChats || [])
-      .filter(chat => chat !== null && chat.isUnread === true);
-    displayGroups = [];
-  } else if (activeTab === "groups") {
-    displayChats = [];
-    displayGroups = (userGroups || []).filter(group => group !== null);
-  }
+  // Filter chats and groups based on the active tab
+if (activeTab === "all") {
+  displayChats = (userChats || []).filter((chat): chat is ChatType => chat !== null);
+  displayGroups = [];
+} else if (activeTab === "unread") {
+  displayChats = (userChats || [])
+    .filter((chat): chat is ChatType => chat !== null && chat.isUnread === true);
+  displayGroups = [];
+} else if (activeTab === "groups") {
+  displayChats = [];
+  displayGroups = (userGroups || []).filter((group): group is GroupType => group !== null);
+}
 
   const hasContent = displayChats.length > 0 || displayGroups.length > 0;
 

@@ -1,15 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { ArrowLeft, Moon, Sun, Monitor, Check, PaintBucket } from "lucide-react";
 import { useRouter } from "next/navigation";
-import ThemeSelector from "@/components/settings/ThemeSelector";
-import { useThemeContext } from "@/components/Providers/ThemeProvider";
+import { Theme, useThemeContext } from "@/components/Providers/ThemeProvider";
 
 export default function SettingsPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("appearance");
-  const { theme, setTheme, isLoaded } = useThemeContext();
+  const { theme, setTheme } = useThemeContext();
   const [selectedBackground, setSelectedBackground] = useState("bg-white");
 
   // Theme options with details
@@ -185,19 +184,18 @@ export default function SettingsPage() {
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
                   {themes.map((themeOption) => {
-                    const Icon = themeOption.icon;
                     const isActive = theme === themeOption.id;
                     
                     return (
                       <button
-                        key={themeOption.id}
-                        onClick={() => setTheme(themeOption.id as any)}
-                        className={`flex items-start p-3 rounded-lg border transition-all ${
-                          isActive 
-                            ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20" 
-                            : "border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800"
-                        }`}
-                      >
+                      key={themeOption.id}
+                      onClick={() => setTheme(themeOption.id as Theme)}
+                      className={`flex items-start p-3 rounded-lg border transition-all ${
+                        isActive 
+                          ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20" 
+                          : "border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800"
+                      }`}
+                    >
                         <div className={`${themeOption.preview} w-12 h-12 rounded-md mr-3 flex-shrink-0`}></div>
                         <div className="flex-grow text-left">
                           <div className="flex items-center">
@@ -330,7 +328,7 @@ export default function SettingsPage() {
                 <div className="p-3 rounded-lg border border-gray-200 dark:border-gray-800 flex items-center justify-between">
                   <div>
                     <h3 className="font-medium">New member notifications</h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Get notified when someone joins a group you're in</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Get notified when someone joins a group you&apos;re in</p>
                   </div>
                   <div className="flex-none">
                     <label className="relative inline-flex items-center cursor-pointer">
@@ -367,7 +365,7 @@ export default function SettingsPage() {
                 <div className="p-3 rounded-lg border border-gray-200 dark:border-gray-800 flex items-center justify-between">
                   <div>
                     <h3 className="font-medium">Show online status</h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Let others see when you're online</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Let others see when you&apos;re online</p>
                   </div>
                   <div className="flex-none">
                     <label className="relative inline-flex items-center cursor-pointer">
@@ -380,7 +378,7 @@ export default function SettingsPage() {
                 <div className="p-3 rounded-lg border border-gray-200 dark:border-gray-800 flex items-center justify-between">
                   <div>
                     <h3 className="font-medium">Show read receipts</h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Let others know when you've read their messages</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Let others know when you&apos;ve read their messages</p>
                   </div>
                   <div className="flex-none">
                     <label className="relative inline-flex items-center cursor-pointer">
@@ -393,7 +391,7 @@ export default function SettingsPage() {
                 <div className="p-3 rounded-lg border border-gray-200 dark:border-gray-800 flex items-center justify-between">
                   <div>
                     <h3 className="font-medium">Show typing indicators</h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Let others see when you're typing</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Let others see when you&apos;re typing</p>
                   </div>
                   <div className="flex-none">
                     <label className="relative inline-flex items-center cursor-pointer">

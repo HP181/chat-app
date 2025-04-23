@@ -1,10 +1,11 @@
-"use client";
+// components/chat/SearchMessages.tsx
 
 import { useState, useEffect } from "react";
 import { Search, X, ArrowDown, ArrowUp } from "lucide-react";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { format } from "date-fns";
+import { MessageType, DirectMessageType, GroupMessageType } from "./MessageBubble"; // Import the types
 
 interface SearchMessagesProps {
   chatId: string;
@@ -26,7 +27,7 @@ const SearchMessages = ({ chatId, isGroup }: SearchMessagesProps) => {
     searchTerm.trim().length > 0
       ? { chatId, searchTerm }
       : "skip"
-  );
+  ) as MessageType[] | undefined;
 
   // Reset selected index when search results change
   useEffect(() => {
@@ -68,12 +69,15 @@ const SearchMessages = ({ chatId, isGroup }: SearchMessagesProps) => {
   };
 
   // Helper function to get sender name based on message type
-  const getSenderName = (message: any) => {
+  const getSenderName = (message: MessageType): string => {
     if (isGroup) {
-      // For group messages, the sender is a full object
-      return message.sender?.name || "Unknown";
+      // For group messages, check if it's a GroupMessageType and has sender info
+      if ('groupId' in message && message.sender) {
+        return message.sender.name || "Unknown";
+      }
+      return "Unknown";
     } else {
-      // For direct messages, we just have senderId
+      // For direct messages, we don't display sender
       return "";
     }
   };

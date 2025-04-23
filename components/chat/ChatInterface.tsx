@@ -2,11 +2,11 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Send, Paperclip, Search, Smile, Image as ImageIcon, Mic, X, Users, MessageSquare } from "lucide-react";
+import { Send, Search, Image as ImageIcon, X, Users, MessageSquare } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import MessageBubble from "./MessageBubble";
+import MessageBubble, { MessageType, BaseMessageType, DirectMessageType, GroupMessageType } from "./MessageBubble";
 import FileUpload from "../ui/FileUpload";
 import SearchMessages from "./SearchMessages";
 import { motion, AnimatePresence } from "framer-motion";
@@ -22,7 +22,6 @@ const ChatInterface = ({ chatId, isGroup = false }: ChatInterfaceProps) => {
   const [mediaUrl, setMediaUrl] = useState("");
   const [showMediaUpload, setShowMediaUpload] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -192,6 +191,40 @@ const ChatInterface = ({ chatId, isGroup = false }: ChatInterfaceProps) => {
 
   if (!user) return null;
 
+  // Helper function to transform message to the correct type
+  const transformMessage = (msg: any): MessageType => {
+    if (isGroup) {
+      // Transform to GroupMessageType
+      return {
+        _id: msg._id,
+        groupId: msg.groupId || chatId,
+        senderId: msg.senderId,
+        content: msg.content,
+        timestamp: msg.timestamp,
+        mediaUrl: msg.mediaUrl,
+        mediaType: msg.mediaType,
+        isDeleted: msg.isDeleted,
+        reactions: msg.reactions,
+        readBy: msg.readBy,
+        sender: msg.sender
+      } as GroupMessageType;
+    } else {
+      // Transform to DirectMessageType
+      return {
+        _id: msg._id,
+        chatId: msg.chatId || chatId,
+        senderId: msg.senderId,
+        content: msg.content,
+        timestamp: msg.timestamp,
+        mediaUrl: msg.mediaUrl,
+        mediaType: msg.mediaType,
+        isDeleted: msg.isDeleted,
+        reactions: msg.reactions,
+        readBy: msg.readBy
+      } as DirectMessageType;
+    }
+  };
+
   return (
     <div className="flex flex-col h-full bg-gray-100 dark:bg-gray-900">
       {/* Messages container */}
@@ -215,7 +248,7 @@ const ChatInterface = ({ chatId, isGroup = false }: ChatInterfaceProps) => {
                 }}
               >
                 <MessageBubble
-                  message={message}
+                  message={transformMessage(message)}
                   isOwnMessage={message.senderId === user.id}
                   isGroup={isGroup}
                 />

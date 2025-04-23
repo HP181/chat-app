@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import { useMutation, useQuery } from "convex/react";
@@ -13,6 +13,22 @@ import {
 import FileUpload from "@/components/ui/FileUpload";
 import { motion, AnimatePresence } from "framer-motion";
 
+// Define a type for the user objects
+interface UserType {
+  _id: string;
+  clerkId: string;
+  name: string;
+  email: string;
+  imageUrl: string;
+  username?: string;
+  lastSeen?: number;
+}
+
+// Define the error type
+interface CreateGroupError extends Error {
+  message: string;
+}
+
 export default function CreateGroupPage() {
   const router = useRouter();
   const { user } = useUser();
@@ -20,7 +36,7 @@ export default function CreateGroupPage() {
   const [description, setDescription] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedUsers, setSelectedUsers] = useState<any[]>([]);
+  const [selectedUsers, setSelectedUsers] = useState<UserType[]>([]);
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState("details");
@@ -31,13 +47,13 @@ export default function CreateGroupPage() {
     user?.id && searchTerm.trim().length > 0
       ? { searchTerm, currentUserClerkId: user.id }
       : "skip"
-  );
+  ) as UserType[] | undefined;
   
   // Create group mutation
   const createGroup = useMutation(api.groups.createGroup);
 
   // Handle user selection
-  const toggleUserSelection = (selectedUser: any) => {
+  const toggleUserSelection = (selectedUser: UserType) => {
     setSelectedUsers((prev) => {
       const isSelected = prev.some((u) => u.clerkId === selectedUser.clerkId);
       
@@ -79,9 +95,10 @@ export default function CreateGroupPage() {
       });
       
       router.push(`/group/${result.groupId}`);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error creating group:", error);
-      setError(error.message || "Failed to create group");
+      const errorMessage = error instanceof Error ? error.message : "Failed to create group";
+      setError(errorMessage);
       setIsCreating(false);
     }
   };

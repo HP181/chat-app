@@ -1,3 +1,4 @@
+// components/ui/FileUpload.tsx
 "use client";
 
 import { useState, useCallback } from "react";
@@ -20,7 +21,7 @@ const FileUpload = ({ value, onChange, disabled, endpoint }: FileUploadProps) =>
     value ? (value.includes("image") ? "image" : "video") : null
   );
 
-  const getSignature = async () => {
+  const getSignature = useCallback(async () => {
     try {
       const response = await axios.get("/api/cloudinary/signature", {
         params: { endpoint },
@@ -30,7 +31,7 @@ const FileUpload = ({ value, onChange, disabled, endpoint }: FileUploadProps) =>
       console.error("Failed to get upload signature:", error);
       throw error;
     }
-  };
+  }, [endpoint]);
 
   const onDrop = useCallback(
     async (acceptedFiles: File[]) => {
@@ -86,7 +87,7 @@ const FileUpload = ({ value, onChange, disabled, endpoint }: FileUploadProps) =>
         setIsUploading(false);
       }
     },
-    [onChange, endpoint]
+    [onChange, endpoint, getSignature]
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({

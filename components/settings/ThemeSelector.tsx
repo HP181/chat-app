@@ -70,7 +70,7 @@ const ThemeSelector = () => {
       >
         {(() => {
           const currentTheme = THEME_DETAILS[theme as Theme];
-          const Icon = currentTheme?.icon || Sun;
+          // const Icon = currentTheme?.icon || Sun;
           return (
             <>
               <div className={`w-6 h-6 rounded-full flex-shrink-0 ${currentTheme?.color}`} />
@@ -86,7 +86,7 @@ const ThemeSelector = () => {
             {Object.entries(THEMES).map(([key]) => {
               const themeKey = key as Theme;
               const themeInfo = THEME_DETAILS[themeKey];
-              const Icon = themeInfo?.icon || Palette;
+              // const Icon = themeInfo?.icon || Palette;
               const isActive = theme === themeKey;
 
               return (

@@ -19,16 +19,16 @@ export default function GroupChatPage() {
   const [showMembers, setShowMembers] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
-  
+
   // Get group ID from params
   const groupId = typeof params.id === "string" ? params.id : "";
-  
+
   // Get group data
   const group = useQuery(api.groups.getGroupById, { groupId });
-  
+
   // Check if current user is a member
   const isMember = group ? group.memberIds.includes(user?.id || "") : false;
-  
+
   // Check if current user is an admin
   const isAdmin = group ? group.adminIds.includes(user?.id || "") : false;
 
@@ -37,8 +37,21 @@ export default function GroupChatPage() {
     return (
       <div className="flex flex-col items-center justify-center h-full p-8 bg-gray-50 dark:bg-gray-900">
         <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mb-4">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="text-red-500">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            className="text-red-500"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+            />
           </svg>
         </div>
         <h2 className="text-2xl font-bold mb-2 text-gray-900 dark:text-white">
@@ -97,7 +110,7 @@ export default function GroupChatPage() {
         >
           <ArrowLeft className="h-5 w-5" />
         </button>
-        
+
         <div className="flex items-center flex-1">
           {group.imageUrl ? (
             <Image
@@ -113,13 +126,15 @@ export default function GroupChatPage() {
             </div>
           )}
           <div className="ml-3">
-            <h2 className="font-semibold text-gray-900 dark:text-white">{group.name}</h2>
+            <h2 className="font-semibold text-gray-900 dark:text-white">
+              {group.name}
+            </h2>
             <p className="text-xs text-gray-500 dark:text-gray-400">
               {group.members?.length || group.memberIds.length} members
             </p>
           </div>
         </div>
-        
+
         <div className="flex space-x-1">
           <motion.button
             whileHover={{ scale: 1.05 }}
@@ -133,7 +148,7 @@ export default function GroupChatPage() {
           >
             <Users className="h-5 w-5" />
           </motion.button>
-          
+
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -146,7 +161,7 @@ export default function GroupChatPage() {
           >
             <Info className="h-5 w-5" />
           </motion.button>
-          
+
           {isAdmin && (
             <motion.button
               whileHover={{ scale: 1.05 }}
@@ -161,8 +176,8 @@ export default function GroupChatPage() {
               <Settings className="h-5 w-5" />
             </motion.button>
           )}
-          
-          <motion.button 
+
+          <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 transition-colors"
@@ -171,16 +186,20 @@ export default function GroupChatPage() {
           </motion.button>
         </div>
       </div>
-      
+
       {/* Main content with sidebars */}
       <div className="flex-1 flex overflow-hidden relative">
         {/* Chat interface */}
-        <div className={`flex-1 overflow-hidden ${
-          showMembers || showSettings || showInfo ? "hidden md:block md:flex-1" : ""
-        }`}>
+        <div
+          className={`flex-1 overflow-hidden ${
+            showMembers || showSettings || showInfo
+              ? "hidden md:block md:flex-1"
+              : ""
+          }`}
+        >
           <ChatInterface chatId={groupId} isGroup={true} />
         </div>
-        
+
         {/* Sidebar overlays for mobile, sidebars for desktop */}
         <AnimatePresence>
           {/* Members panel */}
@@ -192,13 +211,13 @@ export default function GroupChatPage() {
               transition={{ type: "spring", damping: 30, stiffness: 300 }}
               className="fixed inset-0 md:relative md:w-80 md:inset-auto z-30 bg-white dark:bg-gray-900 shadow-xl md:shadow-none md:border-l md:border-gray-200 md:dark:border-gray-800"
             >
-              <GroupMembersPanel 
-                group={group} 
+              <GroupMembersPanel
+                group={group}
                 onClose={() => setShowMembers(false)}
               />
             </motion.div>
           )}
-          
+
           {/* Group info panel */}
           {showInfo && (
             <motion.div
@@ -218,12 +237,24 @@ export default function GroupChatPage() {
                     onClick={() => setShowInfo(false)}
                     className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="20"
+                      height="20"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
                     </svg>
                   </button>
                 </div>
-                
+
                 <div className="p-4 flex-1 overflow-y-auto">
                   {/* Group image */}
                   <div className="flex justify-center mb-4">
@@ -241,40 +272,55 @@ export default function GroupChatPage() {
                       </div>
                     )}
                   </div>
-                  
+
                   {/* Group name and description */}
                   <div className="text-center mb-6">
-                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">{group.name}</h3>
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                      {group.name}
+                    </h3>
                     <p className="text-gray-500 dark:text-gray-400 mt-1">
-                      Group · {group.members?.length || group.memberIds.length} members
+                      Group · {group.members?.length || group.memberIds.length}{" "}
+                      members
                     </p>
                   </div>
-                  
+
                   {/* Description */}
                   <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg mb-4">
-                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Description</h4>
+                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                      Description
+                    </h4>
                     <p className="text-gray-600 dark:text-gray-400 text-sm">
                       {group.description || "No description provided"}
                     </p>
                   </div>
-                  
+
                   {/* Created info */}
                   <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
-                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Created</h4>
+                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                      Created
+                    </h4>
                     <p className="text-gray-600 dark:text-gray-400 text-sm">
-                      {new Date(group.createdAt).toLocaleDateString()} at {new Date(group.createdAt).toLocaleTimeString()}
+                      {new Date(group.createdAt).toLocaleDateString()} at{" "}
+                      {new Date(group.createdAt).toLocaleTimeString()}
                     </p>
-                    {group.members?.find(m => m.clerkId === group.createdBy)?.name && (
-                      <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">
-                        Created by {group.members?.find(m => m.clerkId === group.createdBy)?.name}
-                      </p>
-                    )}
+                    {group.members &&
+                      group.members.find((m) => m?.clerkId === group.createdBy)
+                        ?.name && (
+                        <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">
+                          Created by{" "}
+                          {
+                            group.members.find(
+                              (m) => m?.clerkId === group.createdBy
+                            )?.name
+                          }
+                        </p>
+                      )}
                   </div>
                 </div>
               </div>
             </motion.div>
           )}
-          
+
           {/* Settings sidebar */}
           {showSettings && isAdmin && (
             <motion.div
@@ -284,14 +330,14 @@ export default function GroupChatPage() {
               transition={{ type: "spring", damping: 30, stiffness: 300 }}
               className="fixed inset-0 md:relative md:w-80 md:inset-auto z-30 bg-white dark:bg-gray-900 shadow-xl md:shadow-none md:border-l md:border-gray-200 md:dark:border-gray-800"
             >
-              <GroupSettings 
+              <GroupSettings
                 group={group}
-                onClose={() => setShowSettings(false)} 
+                onClose={() => setShowSettings(false)}
               />
             </motion.div>
           )}
         </AnimatePresence>
-        
+
         {/* Overlay for mobile */}
         <AnimatePresence>
           {(showMembers || showSettings || showInfo) && (

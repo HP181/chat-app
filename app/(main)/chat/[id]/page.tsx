@@ -1,13 +1,13 @@
 // app/(main)/chat/[id]/page.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import Image from "next/image";
-import { ArrowLeft, MoreVertical, Phone, Video, Search } from "lucide-react";
+import { ArrowLeft, MoreVertical, Phone, Video } from "lucide-react";
 import ChatInterface from "@/components/chat/ChatInterface";
 import { formatDistanceToNow } from "date-fns";
 import { motion } from "framer-motion";
@@ -84,7 +84,7 @@ export default function ChatPage() {
           transition={{ delay: 0.2 }}
           className="text-gray-500 dark:text-gray-400 mb-6 text-center max-w-md"
         >
-          This chat may have been deleted or you don't have access to it.
+          This chat may have been deleted or you don&apos;t have access to it.
         </motion.p>
         <motion.button
           initial={{ opacity: 0, y: 20 }}

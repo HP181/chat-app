@@ -11,8 +11,30 @@ cloudinary.config({
 type UploadOptions = {
   folder?: string;
   overwrite?: boolean;
-  resource_type?: "auto" | "image" | "video" | "raw"; // Use the correct union type
+  resource_type?: "auto" | "image" | "video" | "raw";
 };
+
+// Define the CloudinaryUploadResult interface
+interface CloudinaryUploadResult {
+  public_id: string;
+  version: number;
+  signature: string;
+  width: number;
+  height: number;
+  format: string;
+  resource_type: string;
+  created_at: string;
+  tags: string[];
+  bytes: number;
+  type: string;
+  etag: string;
+  url: string;
+  secure_url: string;
+  original_filename: string;
+  api_key?: string;
+  asset_id?: string;
+  // Add other fields that might be in the response
+}
 
 // Function to generate an upload signature for client-side uploads
 export const generateSignature = (
@@ -52,7 +74,7 @@ export const generateSignature = (
 export const uploadToCloudinary = async (
   file: string,
   options: UploadOptions = {}
-): Promise<any> => {
+): Promise<CloudinaryUploadResult> => {
   const defaultOptions = {
     folder: 'chat-app',
     overwrite: true,
@@ -64,7 +86,7 @@ export const uploadToCloudinary = async (
       ...defaultOptions,
       ...options,
     });
-    return result;
+    return result as CloudinaryUploadResult;
   } catch (error) {
     console.error('Cloudinary upload error:', error);
     throw error;

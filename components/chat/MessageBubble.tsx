@@ -10,8 +10,45 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { motion, AnimatePresence } from "framer-motion";
 
-interface MessageBubbleProps {
-  message: any;
+// Define appropriate types for the message and reaction objects
+export interface ReactionType {
+  userId: string;
+  reaction: string;
+}
+
+// Base message properties shared between direct and group messages
+export interface BaseMessageType {
+  _id: string;
+  senderId: string;
+  content: string;
+  timestamp: number;
+  mediaUrl?: string;
+  mediaType?: string;
+  isDeleted?: boolean;
+  reactions?: ReactionType[];
+  readBy?: string[];
+}
+
+// Direct message specific properties
+export interface DirectMessageType extends BaseMessageType {
+  chatId: string;
+}
+
+// Group message specific properties
+export interface GroupMessageType extends BaseMessageType {
+  groupId: string;
+  sender?: {
+    _id: string;
+    name: string;
+    imageUrl: string;
+  };
+}
+
+// Union type that can be either a direct message or a group message
+export type MessageType = DirectMessageType | GroupMessageType;
+
+export interface MessageBubbleProps {
+  message: MessageType;
   isOwnMessage: boolean;
   isGroup: boolean;
 }
@@ -21,6 +58,9 @@ const MessageBubble = ({ message, isOwnMessage, isGroup }: MessageBubbleProps) =
   const [showReactions, setShowReactions] = useState(false);
   const reactionMenuRef = useRef<HTMLDivElement>(null);
   const reactionButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Check if this is a group message
+  const isGroupMessage = 'groupId' in message;
   
   // Use appropriate delete function based on isGroup
   const deleteMessageFn = isGroup
@@ -90,7 +130,7 @@ const MessageBubble = ({ message, isOwnMessage, isGroup }: MessageBubbleProps) =
     if (!message.reactions || message.reactions.length === 0) return null;
 
     const counts: Record<string, number> = {};
-    message.reactions.forEach((r: any) => {
+    message.reactions.forEach((r: ReactionType) => {
       counts[r.reaction] = (counts[r.reaction] || 0) + 1;
     });
 
@@ -120,6 +160,14 @@ const MessageBubble = ({ message, isOwnMessage, isGroup }: MessageBubbleProps) =
   const messageStatus = getMessageStatus();
   const reactionCounts = getReactionCounts();
 
+  // Getter functions for message properties to handle both group and direct messages
+  const getSenderName = () => {
+    if (isGroup && !isOwnMessage && isGroupMessage && message.sender) {
+      return message.sender.name;
+    }
+    return null;
+  };
+
   return (
     <div
       id={`message-${message._id}`}
@@ -135,9 +183,9 @@ const MessageBubble = ({ message, isOwnMessage, isGroup }: MessageBubbleProps) =
         }`}
       >
         {/* Group message sender name */}
-        {isGroup && !isOwnMessage && message.sender && (
+        {getSenderName() && (
           <div className="font-semibold text-xs mb-1">
-            {message.sender.name}
+            {getSenderName()}
           </div>
         )}
 
