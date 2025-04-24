@@ -4,19 +4,19 @@
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import { format } from "date-fns";
-import { Check, CheckCheck, Trash2, Smile } from "lucide-react";
+import { Check, CheckCheck, Trash2, Smile, X } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { motion, AnimatePresence } from "framer-motion";
 
-// Define appropriate types for the message and reaction objects
+// Reaction Types
 export interface ReactionType {
   userId: string;
   reaction: string;
 }
 
-// Base message properties shared between direct and group messages
+// Message Types
 export interface BaseMessageType {
   _id: string;
   senderId: string;
@@ -29,12 +29,10 @@ export interface BaseMessageType {
   readBy?: string[];
 }
 
-// Direct message specific properties
 export interface DirectMessageType extends BaseMessageType {
   chatId: string;
 }
 
-// Group message specific properties
 export interface GroupMessageType extends BaseMessageType {
   groupId: string;
   sender?: {
@@ -44,7 +42,6 @@ export interface GroupMessageType extends BaseMessageType {
   };
 }
 
-// Union type that can be either a direct message or a group message
 export type MessageType = DirectMessageType | GroupMessageType;
 
 export interface MessageBubbleProps {
@@ -53,21 +50,22 @@ export interface MessageBubbleProps {
   isGroup: boolean;
 }
 
-const MessageBubble = ({ message, isOwnMessage, isGroup }: MessageBubbleProps) => {
+const MessageBubble = ({
+  message,
+  isOwnMessage,
+  isGroup,
+}: MessageBubbleProps) => {
   const { user } = useUser();
   const [showReactions, setShowReactions] = useState(false);
   const reactionMenuRef = useRef<HTMLDivElement>(null);
   const reactionButtonRef = useRef<HTMLButtonElement>(null);
 
-  // Check if this is a group message
-  const isGroupMessage = 'groupId' in message;
-  
-  // Use appropriate delete function based on isGroup
+  const isGroupMessage = "groupId" in message;
+
   const deleteMessageFn = isGroup
     ? api.groups.deleteGroupMessage
     : api.messages.deleteMessage;
 
-  // Use appropriate reaction function based on isGroup
   const addReactionFn = isGroup
     ? api.groups.addGroupReaction
     : api.messages.addReaction;
@@ -75,19 +73,15 @@ const MessageBubble = ({ message, isOwnMessage, isGroup }: MessageBubbleProps) =
   const deleteMessage = useMutation(deleteMessageFn);
   const addReaction = useMutation(addReactionFn);
 
-  // Get recipient online status (for delivery receipts)
   const recipientStatus = useQuery(
     api.messages.getMessageRecipientStatus,
-    isOwnMessage && !isGroup ? 
-      { messageId: message._id } : 
-      "skip"
+    isOwnMessage && !isGroup ? { messageId: message._id } : "skip"
   );
 
-  // Close reaction menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
-        reactionMenuRef.current && 
+        reactionMenuRef.current &&
         !reactionMenuRef.current.contains(event.target as Node) &&
         reactionButtonRef.current &&
         !reactionButtonRef.current.contains(event.target as Node)
@@ -95,73 +89,44 @@ const MessageBubble = ({ message, isOwnMessage, isGroup }: MessageBubbleProps) =
         setShowReactions(false);
       }
     };
-
-    if (showReactions) {
+    if (showReactions)
       document.addEventListener("mousedown", handleClickOutside);
-    }
-    
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showReactions]);
 
   if (!user) return null;
 
   const handleDelete = () => {
     if (window.confirm("Are you sure you want to delete this message?")) {
-      deleteMessage({
-        messageId: message._id,
-        userId: user.id,
-      });
+      deleteMessage({ messageId: message._id, userId: user.id });
     }
   };
 
   const handleReaction = (reaction: string) => {
-    addReaction({
-      messageId: message._id,
-      userId: user.id,
-      reaction,
-    });
+    addReaction({ messageId: message._id, userId: user.id, reaction });
     setShowReactions(false);
   };
 
-  // Get reaction counts
   const getReactionCounts = () => {
-    if (!message.reactions || message.reactions.length === 0) return null;
-
+    if (!message.reactions?.length) return null;
     const counts: Record<string, number> = {};
-    message.reactions.forEach((r: ReactionType) => {
+    message.reactions.forEach((r) => {
       counts[r.reaction] = (counts[r.reaction] || 0) + 1;
     });
-
     return Object.entries(counts);
   };
 
-  // Determine message status (for sent messages)
-  const getMessageStatus = () => {
+  const messageStatus = () => {
     if (!isOwnMessage) return null;
-    
-    // Parse the readBy array to check if message is read
     const readBy = message.readBy || [];
-    const hasBeenReadByOthers = readBy.some((id: string) => id !== user?.id);
-    
-    // Check if recipient is online based on query
-    const isRecipientOnline = recipientStatus?.isOnline || false;
-    
-    if (hasBeenReadByOthers) {
-      return "read"; // Message has been read (green double tick)
-    } else if (isRecipientOnline) {
-      return "delivered"; // Message delivered - user is online but hasn't read (gray double tick)
-    } else {
-      return "sent"; // Message sent but user is offline (gray single tick)
-    }
+    const hasBeenRead = readBy.some((id) => id !== user.id);
+    const isOnline = recipientStatus?.isOnline;
+    if (hasBeenRead) return "read";
+    if (isOnline) return "delivered";
+    return "sent";
   };
 
-  const messageStatus = getMessageStatus();
-  const reactionCounts = getReactionCounts();
-
-  // Getter functions for message properties to handle both group and direct messages
-  const getSenderName = () => {
+  const senderName = () => {
     if (isGroup && !isOwnMessage && isGroupMessage && message.sender) {
       return message.sender.name;
     }
@@ -173,7 +138,6 @@ const MessageBubble = ({ message, isOwnMessage, isGroup }: MessageBubbleProps) =
       id={`message-${message._id}`}
       className={`flex flex-col ${isOwnMessage ? "items-end" : "items-start"} relative mb-6`}
     >
-      {/* Message bubble */}
       <motion.div
         whileHover={{ scale: 1.01 }}
         className={`max-w-[80%] rounded-xl p-3 ${
@@ -182,47 +146,43 @@ const MessageBubble = ({ message, isOwnMessage, isGroup }: MessageBubbleProps) =
             : "bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-white"
         }`}
       >
-        {/* Group message sender name */}
-        {getSenderName() && (
-          <div className="font-semibold text-xs mb-1">
-            {getSenderName()}
-          </div>
+        {senderName() && (
+          <div className="font-semibold text-xs mb-1">{senderName()}</div>
         )}
 
-        {/* Message content */}
         {message.isDeleted ? (
           <div className="italic text-gray-400 dark:text-gray-400">
             This message was deleted
           </div>
         ) : (
           <>
-            {/* Text content */}
-            {message.content && <p className="leading-normal">{message.content}</p>}
+            {message.content && (
+              <p className="leading-normal">{message.content}</p>
+            )}
 
-            {/* Media content */}
             {message.mediaUrl && (
               <div className="mt-2 rounded-lg overflow-hidden">
-                {message.mediaType === "image" ? (
+                {message.mediaUrl.includes(".mp4") ||
+                message.mediaUrl.includes("/video/") ? (
+                  <video
+                    src={message.mediaUrl}
+                    controls
+                    className="rounded-md max-h-60 w-full mt-2"
+                  />
+                ) : (
                   <Image
                     src={message.mediaUrl}
                     alt="Image"
                     width={300}
                     height={200}
-                    className="rounded-md max-h-60 object-contain"
+                    className="rounded-md max-h-60 object-contain cursor-default"
                   />
-                ) : message.mediaType === "video" ? (
-                  <video
-                    src={message.mediaUrl}
-                    controls
-                    className="rounded-md max-h-60 w-full"
-                  />
-                ) : null}
+                )}
               </div>
             )}
           </>
         )}
 
-        {/* Message timestamp and read receipts */}
         <div
           className={`text-xs mt-1 flex items-center justify-end ${
             isOwnMessage ? "text-blue-100" : "text-gray-500 dark:text-gray-400"
@@ -231,30 +191,27 @@ const MessageBubble = ({ message, isOwnMessage, isGroup }: MessageBubbleProps) =
           <span>{format(new Date(message.timestamp), "HH:mm")}</span>
           {isOwnMessage && (
             <span className="ml-1 inline-flex items-center">
-              {messageStatus === "read" && (
-                <CheckCheck className="h-4 w-4 text-green-400 !font-extrabold" />
+              {messageStatus() === "read" && (
+                <CheckCheck className="h-4 w-4 text-green-400" />
               )}
-              {messageStatus === "delivered" && (
+              {messageStatus() === "delivered" && (
                 <CheckCheck className="h-3.5 w-3.5" />
               )}
-              {messageStatus === "sent" && (
-                <Check className="h-3.5 w-3.5" />
-              )}
+              {messageStatus() === "sent" && <Check className="h-3.5 w-3.5" />}
             </span>
           )}
         </div>
       </motion.div>
 
-      {/* Reactions displayed inline with counts */}
       <AnimatePresence>
-        {reactionCounts && reactionCounts.length > 0 && (
-          <motion.div 
+        {getReactionCounts() && (
+          <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
             className="flex space-x-2 mt-1"
           >
-            {reactionCounts.map(([reaction, count]) => (
+            {getReactionCounts()?.map(([reaction, count]) => (
               <motion.div
                 key={reaction}
                 whileHover={{ scale: 1.1 }}
@@ -269,9 +226,7 @@ const MessageBubble = ({ message, isOwnMessage, isGroup }: MessageBubbleProps) =
         )}
       </AnimatePresence>
 
-      {/* Action buttons */}
       <div className="flex space-x-2 mt-2">
-        {/* Reaction button */}
         <motion.button
           ref={reactionButtonRef}
           onClick={() => setShowReactions(!showReactions)}
@@ -281,8 +236,7 @@ const MessageBubble = ({ message, isOwnMessage, isGroup }: MessageBubbleProps) =
         >
           <Smile className="h-4 w-4" />
         </motion.button>
-        
-        {/* Delete button (only for own messages) */}
+
         {isOwnMessage && (
           <motion.button
             onClick={handleDelete}
@@ -295,19 +249,17 @@ const MessageBubble = ({ message, isOwnMessage, isGroup }: MessageBubbleProps) =
         )}
       </div>
 
-      {/* Reaction selector popup */}
       <AnimatePresence>
         {showReactions && (
-          <motion.div 
+          <motion.div
             ref={reactionMenuRef}
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8 }}
             transition={{ type: "spring", stiffness: 500, damping: 30 }}
-            className={`absolute ${isOwnMessage ? 'right-0' : 'left-0'} -top-16 bg-gray-800/95 dark:bg-gray-900/95 rounded-full shadow-lg py-2 px-3
-                      flex space-x-3 z-50 min-w-[220px] justify-center`}
+            className={`absolute ${isOwnMessage ? "right-0" : "left-0"} -top-16 bg-gray-800/95 dark:bg-gray-900/95 rounded-full shadow-lg py-2 px-3 flex space-x-3 z-50 min-w-[220px] justify-center`}
           >
-            {['❤️', '👍', '😂', '😮', '😢'].map((emoji) => (
+            {["❤️", "👍", "😂", "😮", "😢"].map((emoji) => (
               <motion.button
                 key={emoji}
                 onClick={() => handleReaction(emoji)}

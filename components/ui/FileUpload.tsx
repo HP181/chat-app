@@ -11,16 +11,17 @@ type FileUploadProps = {
   onChange: (url: string) => void;
   disabled?: boolean;
   endpoint: "messageImage" | "messageVideo" | "profile" | "group";
+  setFileType?: (type: "image" | "video") => void;
 };
 
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
 const MAX_VIDEO_SIZE = 100 * 1024 * 1024; // 100MB
 
-const FileUpload = ({ value, onChange, disabled, endpoint }: FileUploadProps) => {
+const FileUpload = ({ value, onChange, disabled, endpoint, setFileType: setFileTypeProp }: FileUploadProps) => {
   const [isUploading, setIsUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(value || null);
-  const [fileType, setFileType] = useState<"image" | "video" | null>(
-    value ? (value.includes("image") ? "image" : "video") : null
+  const [fileType, setFileTypeInternal] = useState<"image" | "video" | null>(
+    value ? (value.includes("mp4") ? "video" : "image") : null
   );
 
   const getSignature = useCallback(async () => {
@@ -49,13 +50,15 @@ const FileUpload = ({ value, onChange, disabled, endpoint }: FileUploadProps) =>
       }
 
       const maxAllowedSize = isImage ? MAX_IMAGE_SIZE : MAX_VIDEO_SIZE;
-
       if (file.size > maxAllowedSize) {
         alert(`File too large. Max allowed: ${isImage ? "10MB for images" : "100MB for videos"}`);
         return;
       }
 
-      setFileType(isImage ? "image" : "video");
+      // Set preview file type
+      const detectedType = isVideo ? "video" : "image";
+      setFileTypeInternal(detectedType);
+      setFileTypeProp?.(detectedType);
 
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -67,7 +70,6 @@ const FileUpload = ({ value, onChange, disabled, endpoint }: FileUploadProps) =>
 
       try {
         setIsUploading(true);
-
         const { timestamp, signature, folder, apiKey, cloudName } = await getSignature();
 
         const formData = new FormData();
@@ -82,7 +84,14 @@ const FileUpload = ({ value, onChange, disabled, endpoint }: FileUploadProps) =>
           formData
         );
 
-        onChange(response.data.secure_url);
+        const secureUrl = response.data.secure_url;
+        const isVideoUrl = secureUrl.endsWith(".mp4");
+
+        // Update both the fileType and parent's state
+        const finalType: "image" | "video" = isVideoUrl ? "video" : "image";
+        setFileTypeInternal(finalType);
+        setFileTypeProp?.(finalType);
+        onChange(secureUrl);
       } catch (error) {
         console.error("Error uploading file:", error);
         alert("Error uploading file. Please try again.");
@@ -90,16 +99,13 @@ const FileUpload = ({ value, onChange, disabled, endpoint }: FileUploadProps) =>
         setIsUploading(false);
       }
     },
-    [onChange, endpoint, getSignature]
+    [onChange, endpoint, getSignature, setFileTypeProp]
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     disabled: disabled || isUploading,
-    accept: {
-      'image/*': [],
-      'video/*': []
-    },
+    accept: { 'image/*': [], 'video/*': [] },
     maxFiles: 1,
   });
 
@@ -107,8 +113,9 @@ const FileUpload = ({ value, onChange, disabled, endpoint }: FileUploadProps) =>
     e.stopPropagation();
     onChange("");
     setPreviewUrl(null);
-    setFileType(null);
-  }, [onChange]);
+    setFileTypeInternal(null);
+    setFileTypeProp?.(null as any); // clears parent state
+  }, [onChange, setFileTypeProp]);
 
   return (
     <div
@@ -164,9 +171,7 @@ const FileUpload = ({ value, onChange, disabled, endpoint }: FileUploadProps) =>
               <p className="text-sm text-muted-foreground">Uploading...</p>
             ) : (
               <>
-                <p className="text-sm font-medium">
-                  Drag & drop or click to upload
-                </p>
+                <p className="text-sm font-medium">Drag & drop or click to upload</p>
                 <p className="text-xs text-muted-foreground mt-1">
                   Max 10MB for images, 100MB for videos
                 </p>
