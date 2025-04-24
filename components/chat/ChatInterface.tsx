@@ -2,14 +2,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import {
-  Send,
-  Search,
-  Image as ImageIcon,
-  X,
-  Users,
-  MessageSquare,
-} from "lucide-react";
+import { Send, Search, Image as ImageIcon, Users, X } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -60,7 +53,7 @@ const ChatInterface = ({ chatId, isGroup = false }: ChatInterfaceProps) => {
   const [message, setMessage] = useState("");
   const [mediaUrl, setMediaUrl] = useState("");
   const [showMediaUpload, setShowMediaUpload] = useState(false);
-  const [showSearch, setShowSearch] = useState(false);
+  const [showSearch, setShowSearch] = useState(true);
   const [fileType, setFileType] = useState<"image" | "video" | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -268,6 +261,28 @@ const ChatInterface = ({ chatId, isGroup = false }: ChatInterfaceProps) => {
               </svg>
             </motion.div>
           </motion.button>
+        )}
+      </AnimatePresence>
+
+      {/* Search overlay (conditionally rendered) */}
+      <AnimatePresence>
+        {showSearch && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="absolute top-0 left-0 right-0 p-4 bg-white dark:bg-gray-900 border-b dark:border-gray-800 z-20"
+          >
+            <div className="flex items-center">
+              <button
+                onClick={() => setShowSearch(false)}
+                className="p-2 mr-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
+              >
+                <X className="h-5 w-5" />
+              </button>
+              <SearchMessages chatId={chatId} isGroup={isGroup} />
+            </div>
+          </motion.div>
         )}
       </AnimatePresence>
 

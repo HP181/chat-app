@@ -11,13 +11,19 @@ type FileUploadProps = {
   onChange: (url: string) => void;
   disabled?: boolean;
   endpoint: "messageImage" | "messageVideo" | "profile" | "group";
-  setFileType?: (type: "image" | "video") => void;
+  setFileType?: (type: "image" | "video" | null) => void;
 };
 
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
 const MAX_VIDEO_SIZE = 100 * 1024 * 1024; // 100MB
 
-const FileUpload = ({ value, onChange, disabled, endpoint, setFileType: setFileTypeProp }: FileUploadProps) => {
+const FileUpload = ({
+  value,
+  onChange,
+  disabled,
+  endpoint,
+  setFileType: setFileTypeProp,
+}: FileUploadProps) => {
   const [isUploading, setIsUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(value || null);
   const [fileType, setFileTypeInternal] = useState<"image" | "video" | null>(
@@ -51,11 +57,12 @@ const FileUpload = ({ value, onChange, disabled, endpoint, setFileType: setFileT
 
       const maxAllowedSize = isImage ? MAX_IMAGE_SIZE : MAX_VIDEO_SIZE;
       if (file.size > maxAllowedSize) {
-        alert(`File too large. Max allowed: ${isImage ? "10MB for images" : "100MB for videos"}`);
+        alert(
+          `File too large. Max allowed: ${isImage ? "10MB for images" : "100MB for videos"}`
+        );
         return;
       }
 
-      // Set preview file type
       const detectedType = isVideo ? "video" : "image";
       setFileTypeInternal(detectedType);
       setFileTypeProp?.(detectedType);
@@ -70,7 +77,8 @@ const FileUpload = ({ value, onChange, disabled, endpoint, setFileType: setFileT
 
       try {
         setIsUploading(true);
-        const { timestamp, signature, folder, apiKey, cloudName } = await getSignature();
+        const { timestamp, signature, folder, apiKey, cloudName } =
+          await getSignature();
 
         const formData = new FormData();
         formData.append("file", file);
@@ -87,7 +95,6 @@ const FileUpload = ({ value, onChange, disabled, endpoint, setFileType: setFileT
         const secureUrl = response.data.secure_url;
         const isVideoUrl = secureUrl.endsWith(".mp4");
 
-        // Update both the fileType and parent's state
         const finalType: "image" | "video" = isVideoUrl ? "video" : "image";
         setFileTypeInternal(finalType);
         setFileTypeProp?.(finalType);
@@ -105,17 +112,20 @@ const FileUpload = ({ value, onChange, disabled, endpoint, setFileType: setFileT
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     disabled: disabled || isUploading,
-    accept: { 'image/*': [], 'video/*': [] },
+    accept: { "image/*": [], "video/*": [] },
     maxFiles: 1,
   });
 
-  const onClear = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    onChange("");
-    setPreviewUrl(null);
-    setFileTypeInternal(null);
-    setFileTypeProp?.(null as any); // clears parent state
-  }, [onChange, setFileTypeProp]);
+  const onClear = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      onChange("");
+      setPreviewUrl(null);
+      setFileTypeInternal(null);
+      setFileTypeProp?.(null); // ✅ FIXED HERE
+    },
+    [onChange, setFileTypeProp]
+  );
 
   return (
     <div
@@ -138,9 +148,9 @@ const FileUpload = ({ value, onChange, disabled, endpoint, setFileType: setFileT
             />
           )}
           {fileType === "video" && (
-            <video 
-              src={previewUrl} 
-              controls 
+            <video
+              src={previewUrl}
+              controls
               className="w-full h-auto max-h-64 object-contain rounded-md mx-auto"
             />
           )}
@@ -171,7 +181,9 @@ const FileUpload = ({ value, onChange, disabled, endpoint, setFileType: setFileT
               <p className="text-sm text-muted-foreground">Uploading...</p>
             ) : (
               <>
-                <p className="text-sm font-medium">Drag & drop or click to upload</p>
+                <p className="text-sm font-medium">
+                  Drag & drop or click to upload
+                </p>
                 <p className="text-xs text-muted-foreground mt-1">
                   Max 10MB for images, 100MB for videos
                 </p>

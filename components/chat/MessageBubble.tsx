@@ -4,7 +4,7 @@
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import { format } from "date-fns";
-import { Check, CheckCheck, Trash2, Smile, X } from "lucide-react";
+import { Check, CheckCheck, Trash2, Smile } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
