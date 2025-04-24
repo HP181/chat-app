@@ -53,7 +53,7 @@ const ChatInterface = ({ chatId, isGroup = false }: ChatInterfaceProps) => {
   const [message, setMessage] = useState("");
   const [mediaUrl, setMediaUrl] = useState("");
   const [showMediaUpload, setShowMediaUpload] = useState(false);
-  const [showSearch, setShowSearch] = useState(true);
+  const [showSearch, setShowSearch] = useState(false);
   const [fileType, setFileType] = useState<"image" | "video" | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
